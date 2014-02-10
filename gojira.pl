@@ -13,7 +13,8 @@ GetOptions(
 	"help"=> \$flag_help,
 	"enu=s"=> \$flag_enu,
 	"users"=> \$flag_user,
-	"url=s"=> \$flag_url
+	"url=s"=> \$flag_url,
+	"robots=s"=> \$flag_robots
          );
 
 
@@ -35,6 +36,7 @@ print q('            ,.-·^*ª'` ·,               , ·. ,.-·~·.,   ‘       
 
 );
 if ($flag_dic) { &dic; } 
+if ($flag_robots) { &robots; }
 if ($flag_user) { &user; }
 if ($flag_enu) { &enu($flag_url); }
 if ($flag_help) { &help; }
@@ -78,6 +80,7 @@ To use it> perl gojira.pl [options]
 	--url		Target URL
 	--enu=[DIC]	Enumerate plugins installed in target using [DIC]
 	--users		Start to enumerate users registered
+	--robots=[HOST] Check robots.txt in the designed [HOST]
 );
 }
 
@@ -149,6 +152,34 @@ sub user {
 		}
 	}
 	print "\n\n[!] Finalizado el escaneo de usuarios\n";
+}
+
+#Subrutina para comprobar robots.txt. Idea extraída del programa "Parsero"
+sub robots {
+	$target = $flag_robots."/robots.txt";
+	@urls;
+	print "[!] Localizando y comprobando las rutas que aparecen en robots.txt\n\n";
+	$ua = LWP::UserAgent->new; $ua->agent('Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131030');	
+	$response = $ua->get($target);
+	$txt = $response->decoded_content;
+	@contenido = split("\n", $txt);
+	foreach $linea (@contenido) {
+		if ($linea =~ m/Disallow\:/g) {
+			$linea =~ s/Disallow\: //;
+			push(@urls, $linea);
+		}
+		if ($linea =~ m/Allow\:/g) {
+			$linea =~ s/Allow\: //;
+			push(@urls, $linea);
+		}
+	}
+	foreach $url (@urls) {
+		$ua = LWP::UserAgent->new; $ua->agent('Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131030');	
+		$response = $ua->get($flag_robots.$url);
+		print "[+] Checking $url... Status Code: ". $response->status_line."\n";	
+			
+	}		
+	
 }
 
 
