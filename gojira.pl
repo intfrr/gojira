@@ -49,7 +49,7 @@ if ($flag_help) { &help; }
 sub dic {
 	 $url_dic = "http://wordpress.org/plugins/browse/popular/page/";
 	 $file = "dic_populares.txt";
-	 $pages = "1"; # 3000 plugins. Feel free to edit it
+	 $pages = "200"; # 3000 plugins. Feel free to edit it
 	 $i = "1";
 	open(FILE, ">", $file);
 
