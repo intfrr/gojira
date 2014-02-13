@@ -8,13 +8,15 @@
 use LWP::UserAgent;
 use Getopt::Long;
 
+
 GetOptions(
         "dic"=> \$flag_dic,
 	"help"=> \$flag_help,
 	"enu=s"=> \$flag_enu,
 	"users"=> \$flag_user,
 	"url=s"=> \$flag_url,
-	"robots=s"=> \$flag_robots
+	"robots=s"=> \$flag_robots,
+	"version"=> \$flag_ver
          );
 
 
@@ -36,6 +38,7 @@ print q('            ,.-·^*ª'` ·,               , ·. ,.-·~·.,   ‘       
 
 );
 if ($flag_dic) { &dic; } 
+if ($flag_ver) { &version; }
 if ($flag_robots) { &robots; }
 if ($flag_user) { &user; }
 if ($flag_enu) { &enu($flag_url); }
@@ -81,6 +84,7 @@ To use it> perl gojira.pl [options]
 	--enu=[DIC]	Enumerate plugins installed in target using [DIC]
 	--users		Start to enumerate users registered
 	--robots=[HOST] Check robots.txt in the designed [HOST]
+	--version	Extract WordPress version
 );
 }
 
@@ -180,6 +184,55 @@ sub robots {
 			
 	}		
 	
+}
+
+
+#Subrutina para sacar la versión del WordPress
+sub version {
+	$target = $flag_url;
+	@links;
+	print "[!] Empezando fingerprint...\n\n";
+	$ua = LWP::UserAgent->new; $ua->agent('Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131030');	
+	$response = $ua->get($target);
+	$html = $response->decoded_content;
+	@contenido = split("\n", $html);
+	foreach $linea (@contenido) {
+		if ($linea =~ m/s\?ver=(.*?)\'/g) {
+		push(@links, $1);
+		}
+		if ($linea =~ m/\"generator\" content=\"(.*?)\" /g) { 
+			$meta = $1;
+		}
+	}
+	if ($meta) {
+		print "[+] Meta generator version! => $meta\n";
+	}
+	#Vamos a sacar la moda a pelo, como los campeones
+	%veces;
+	foreach $elemento (@links) {
+		$veces{$elemento} += 1;
+	}
+	$max = 0;
+	$pos = $max;
+	foreach $n ( keys %veces ) {
+		if ($max < $veces{$n}) {
+			$max = $n;
+			$n_max = $n;
+		}
+	}
+
+	print "[+] Version deducida por los links! => WordPress $n_max\n";
+
+	$ua = LWP::UserAgent->new;
+	$response = $ua->get($target."/readme.html");
+	$html = $response->decoded_content;
+	@contenido = split("\n", $html);
+	foreach $linea (@contenido) {
+		if ($linea =~ m/Version/g) {
+			$linea =~ s/	\<br \/> Version //;
+			print "[+] Readme encontrado! => WordPress ".$linea."\n\n";
+		}
+	}
 }
 
 
