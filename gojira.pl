@@ -217,11 +217,10 @@ sub version {
 	foreach $n ( keys %veces ) {
 		if ($max < $veces{$n}) {
 			$max = $n;
-			$n_max = $n;
 		}
 	}
 
-	print "[+] Version deducida por los links! => WordPress $n_max\n";
+	print "[+] Version deducida por los links! => WordPress $max\n";
 
 	$ua = LWP::UserAgent->new;
 	$response = $ua->get($target."/readme.html");
