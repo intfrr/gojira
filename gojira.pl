@@ -3,11 +3,13 @@
 # Email: overloadblog////hotmail////es             #
 # Blog: 0verl0ad.blogspot.com                      #
 # Twitter: https://twitter.com/TheXC3LL            #
-######################  v0.1  ######################
+######################  v0.2  ######################
 
 use LWP::UserAgent;
 use Getopt::Long;
+use threads;
 
+$threads = "25"; #Edit this to modifiy number of threads
 
 GetOptions(
         "dic"=> \$flag_dic,
@@ -49,7 +51,7 @@ if ($flag_help) { &help; }
 sub dic {
 	 $url_dic = "http://wordpress.org/plugins/browse/popular/page/";
 	 $file = "dic_populares.txt";
-	 $pages = "200"; # 3000 plugins. Feel free to edit it
+	 $pages = "1000"; # 15.000 plugins. Feel free to edit it
 	 $i = "1";
 	open(FILE, ">", $file);
 
@@ -94,21 +96,48 @@ sub enu {
 	$target = $flag_url."/wp-content/plugins";
 	$dic = $flag_enu;
 	print "[!] Iniciando escaneo de plugins...\n\n";
-	open(PLUGINS, "<", $flag_enu);
-	@listaP = <PLUGINS>;
-	$ua = LWP::UserAgent->new; $ua->agent('Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131030');
-	foreach $linea (@listaP) {
-		chomp($linea);
-		@separado = split("=====", $linea);
-		$response = $ua->get($target.$separado[0]);
-		if ($response->status_line !~ /404/ and $response->status_line !~ /500/ and $response->status_line != /302/){
-			print "[+] Posible plugin detectado ~> ".$separado[1]."\n";
-		}
-		
+	open(FILE, "<", $dic);
+	$count = "0";
+	while (<FILE>){
+		$count++;
 	}
-	close(PLUGINS);
+	$lineas = $count / $threads;
+	for ($i = 0; $i < 10; $i++) {
+		if ($i == "0") {
+			$j = "0";
+		} else {
+		$j = $lineas * $i + 1;
+		}
+		$k = $lineas * ($i + 1);
+		push(@ovillo, threads->new(\&peticion, $j, $k ));
+	}
+
+	foreach $hilo (@ovillo) {
+		$hilo->join();
+	}
+
+
 	print "\n[!] Finalizado el escaneo de plugins";
 	
+}
+sub peticion {
+	($inicio, $final) = @_;
+	open(PLUGINS, "<", $flag_enu);
+	@listaP = <PLUGINS>;
+	$i = "0";
+	$ua = LWP::UserAgent->new; $ua->agent('Mozilla/5.0 (X11; Linux i686; rv:17.0) Gecko/20131030');
+	foreach $linea (@listaP) {
+		$i++;
+		if ($i > $inicio and $i < $final) {
+			chomp($linea);
+			@separado = split("=====", $linea);
+			$response = $ua->get($target.$separado[0]);
+			if ($response->status_line !~ /404/ and $response->status_line !~ /500/ and $response->status_line != /302/ and $response->status_line !~ /400/){
+				print "[+] Posible plugin detectado ~> ".$separado[1]."\n";
+			}
+		}
+	}
+	close(PLUGINS);
 }
 
 #Subrutina para extraer los usuarios usando ?author=ID
